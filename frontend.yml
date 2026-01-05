@@ -24,12 +24,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/frontend:latest
-            ${{ secrets.DOCKER_USERNAME }}/frontend:${{ github.sha }}
+      - name: Build frontend image
+        run: |
+          docker build \
+            -t arunkumar885825/frontend:${{ github.sha }} \
+            -t arunkumar885825/frontend:latest \
+            .
+
+      # 4️⃣ Push frontend image
+      - name: Push frontend image
+        run: |
+          docker push arunkumar885825/frontend:${{ github.sha }}
+          docker push arunkumar885825/frontend:latest
+
+      # 5️⃣ Notify deployment repo (trigger CD)
+      - name: Trigger deployment pipeline
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.DEPLOYMENT_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/arunkumar-create/deployment/dispatches \
+            -d '{
+              "event_type": "frontend_updated",
+              "client_payload": {
+                "tag": "'"${{ github.sha }}"'"
+              }
+            }'
