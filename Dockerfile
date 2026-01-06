@@ -31,12 +31,13 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Copy package files first (better caching)
+# Copy dependency files first
 COPY package*.json ./
 
-RUN npm install
+# IMPORTANT: legacy-peer-deps (required for your deps)
+RUN npm install --legacy-peer-deps
 
-# Copy the rest of the source code
+# Copy full source
 COPY . .
 
 # Build React app
@@ -51,10 +52,10 @@ FROM nginx:alpine
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Add custom nginx config (disables cache issues)
+# Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy build output from previous stage
+# Copy React build output
 COPY --from=build /app/build /usr/share/nginx/html
 
 EXPOSE 80
