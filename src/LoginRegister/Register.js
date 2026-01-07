@@ -213,7 +213,7 @@ const Register = ({ onSelectChange }) => {
         const isEmailUnique = await checkEmailUniqueness(email);
         if (isEmailUnique) {
           try {
-            const response = await axios.post('${API_BASE_URL}/userdetails/save', formData);
+            const response = await axios.post(`${API_BASE_URL}/userdetails/save`, formData);
             if (response.status === 200) {
               alert('Form Submitted Successfully');
             } else {
