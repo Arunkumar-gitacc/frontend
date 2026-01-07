@@ -8,8 +8,8 @@ import './Register.css'; // Import the CSS file
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
-const Register = ({ onSelectChange },props) => {
-    const [emailCheckStatus, setEmailCheckStatus] = useState('');
+const Register = ({ onSelectChange }) => {
+  const [emailCheckStatus, setEmailCheckStatus] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -41,10 +41,10 @@ const Register = ({ onSelectChange },props) => {
   });
 
   const { fullName, email, mobileNo, aadhaarNo, bloodGroup, country, state, district, cityOrVillage, pinCode, password, confirmPassword } = formData;
-
+  
   // Options for the select component
   const options = useMemo(() => countryList().getData(), []);
-
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const handleChange = (e, phone) => {
     if (phone !== undefined) {
       // This handles the phone input from react-phone-input-2
@@ -73,7 +73,6 @@ const Register = ({ onSelectChange },props) => {
       validateField(name, value);
     }
   };
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const checkEmailUniqueness = async (email) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/userdetails/check-email/${email}`);
@@ -212,30 +211,27 @@ const Register = ({ onSelectChange },props) => {
       if (!errors.email && !errors.password && !errors.confirmPassword && !errors.mobileNo && !errors.fullName && !errors.country && !errors.state && !errors.district && !errors.cityOrVillage && !errors.pinCode && !errors.bloodGroup && !errors.aadhaarNo) {
         const isEmailUnique = await checkEmailUniqueness(email);
         if (isEmailUnique) {
-      try {
-        const response = await axios.post(
-          `${API_BASE_URL}/userdetails/save`,
-          formData
-        );
-
-        if (response.status === 200) {
-          alert('Form Submitted Successfully');
+          try {
+            const response = await axios.post('${API_BASE_URL}/userdetails/save', formData);
+            if (response.status === 200) {
+              alert('Form Submitted Successfully');
+            } else {
+              alert('There was a problem submitting the form. Please try again.');
+            }
+          } catch (error) {
+            console.error('Error submitting form:', error);
+            alert('There was an error submitting the form. Please try again.');
+          }
         } else {
-          alert('There was a problem submitting the form. Please try again.');
+          alert(emailCheckStatus); // Show email uniqueness error message
         }
-      } catch (error) {
-        console.error('Error submitting form:', error);
-        alert('There was an error submitting the form. Please try again.');
+      } else {
+        alert('Please check the errors before submitting the form');
       }
     } else {
-      alert(emailCheckStatus); // Show email uniqueness error message
+      alert('All fields are required');
     }
-  } else {
-    alert('Please check the errors before submitting the form');
-  }
-} else {
-  alert('All fields are required');
-}
+  };
   
 
   return (
@@ -396,267 +392,3 @@ const Register = ({ onSelectChange },props) => {
 };
 
 export default Register;
-
-// import React, { useMemo, useState } from 'react';
-// import Select from 'react-select';
-// import PhoneInput from 'react-phone-input-2';
-// import 'react-phone-input-2/lib/bootstrap.css';
-// import 'bootstrap/dist/css/bootstrap.min.css';
-// import countryList from 'react-select-country-list';
-// import './Register.css';
-// import axios from 'axios';
-// import { Link } from 'react-router-dom';
-
-// const Register = ({ onSelectChange }) => {
-//   const [emailCheckStatus, setEmailCheckStatus] = useState('');
-
-//   const [formData, setFormData] = useState({
-//     fullName: '',
-//     email: '',
-//     mobileNo: '',
-//     aadhaarNo: '',
-//     bloodGroup: '',
-//     country: '',
-//     state: '',
-//     district: '',
-//     cityOrVillage: '',
-//     pinCode: '',
-//     password: '',
-//     confirmPassword: '',
-//   });
-
-//   const [errors, setErrors] = useState({
-//     fullName: '',
-//     email: '',
-//     mobileNo: '',
-//     aadhaarNo: '',
-//     bloodGroup: '',
-//     country: '',
-//     state: '',
-//     district: '',
-//     cityOrVillage: '',
-//     pinCode: '',
-//     password: '',
-//     confirmPassword: '',
-//   });
-
-//   const {
-//     fullName,
-//     email,
-//     mobileNo,
-//     aadhaarNo,
-//     bloodGroup,
-//     country,
-//     state,
-//     district,
-//     cityOrVillage,
-//     pinCode,
-//     password,
-//     confirmPassword,
-//   } = formData;
-
-//   const options = useMemo(() => countryList().getData(), []);
-
-//   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
-//   const handleChange = (e, phone) => {
-//     if (phone !== undefined) {
-//       setFormData({ ...formData, mobileNo: phone });
-//       return;
-//     }
-
-//     if (!e || !e.target) return;
-
-//     const { name, value } = e.target;
-
-//     if (
-//       (name === 'password' || name === 'confirmPassword') &&
-//       value.length > 8
-//     ) {
-//       return;
-//     }
-
-//     if (
-//       (name === 'fullName' ||
-//         name === 'state' ||
-//         name === 'district' ||
-//         name === 'cityOrVillage') &&
-//       !/^[A-Za-z\s]*$/.test(value)
-//     ) {
-//       return;
-//     }
-
-//     if (name === 'aadhaarNo' && value.length > 12) return;
-
-//     if (
-//       (name === 'aadhaarNo' || name === 'pinCode') &&
-//       !/^\d*$/.test(value)
-//     ) {
-//       return;
-//     }
-
-//     setFormData({
-//       ...formData,
-//       [name]: value,
-//     });
-
-//     validateField(name, value);
-//   };
-
-//   const checkEmailUniqueness = async (email) => {
-//     try {
-//       const response = await axios.get(
-//         `${API_BASE_URL}/userdetails/check-email/${email}`
-//       );
-
-//       if (response.data) {
-//         setEmailCheckStatus('Email is already registered');
-//         return false;
-//       }
-
-//       setEmailCheckStatus('');
-//       return true;
-//     } catch (error) {
-//       console.error('Error checking email uniqueness:', error);
-//       setEmailCheckStatus(
-//         'Error checking email uniqueness. Please try again.'
-//       );
-//       return false;
-//     }
-//   };
-
-//   const validateField = (name, value) => {
-//     let error = '';
-
-//     switch (name) {
-//       case 'email':
-//         if (!value) error = 'Email is required';
-//         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-//           error = 'Invalid email format';
-//         break;
-
-//       case 'password':
-//         if (!value) error = 'Password is required';
-//         else if (value.length < 8)
-//           error = 'Password must be at least 8 characters long';
-//         break;
-
-//       case 'confirmPassword':
-//         if (!value) error = 'Confirm Password is required';
-//         else if (value !== password) error = 'Passwords do not match';
-//         break;
-
-//       case 'aadhaarNo':
-//         if (!value) error = 'AADHAAR is required';
-//         else if (value.length !== 12)
-//           error = 'AADHAAR must be 12 characters long';
-//         break;
-
-//       case 'mobileNo':
-//         if (!value) error = 'Mobile number is required';
-//         else if (!/^\d{10}$/.test(value))
-//           error = 'Mobile number must be exactly 10 digits';
-//         break;
-
-//       case 'pinCode':
-//         if (!value) error = 'PIN CODE is required';
-//         break;
-
-//       case 'state':
-//         if (!value) error = 'State is required';
-//         break;
-
-//       case 'district':
-//         if (!value) error = 'District is required';
-//         break;
-
-//       case 'cityOrVillage':
-//         if (!value) error = 'City/Village is required';
-//         break;
-
-//       case 'bloodGroup':
-//         if (!value) error = 'You must select your Blood Group';
-//         break;
-
-//       default:
-//         break;
-//     }
-
-//     setErrors({ ...errors, [name]: error });
-//   };
-
-//   const handleSelectChange = (selectedOption) => {
-//     setFormData({ ...formData, country: selectedOption.value });
-//     if (onSelectChange) onSelectChange(selectedOption);
-//   };
-
-//   const handleBloodGroupChange = (e) => {
-//     setFormData({ ...formData, bloodGroup: e.target.value });
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-
-//     Object.keys(formData).forEach((key) =>
-//       validateField(key, formData[key])
-//     );
-
-//     const isValid =
-//       Object.values(formData).every(Boolean) &&
-//       Object.values(errors).every((e) => !e);
-
-//     if (!isValid) {
-//       alert('Please check the errors before submitting the form');
-//       return;
-//     }
-
-//     const isEmailUnique = await checkEmailUniqueness(email);
-//     if (!isEmailUnique) {
-//       alert(emailCheckStatus);
-//       return;
-//     }
-
-//     try {
-//       const response = await axios.post(
-//         `${API_BASE_URL}/userdetails/save`,
-//         formData
-//       );
-
-//       if (response.status === 200) {
-//         alert('Form Submitted Successfully');
-//       } else {
-//         alert('There was a problem submitting the form.');
-//       }
-//     } catch (error) {
-//       console.error('Error submitting form:', error);
-//       alert('There was an error submitting the form.');
-//     }
-//   };
-
-//   return (
-//     <div style={{ marginTop: '70px' }}>
-//       <div className="note">
-//         Note: "To donate blood, please complete the form below and register.
-//         You will be contacted by those in need."
-//       </div>
-
-//       <div className="containere">
-//         <h2>Register</h2>
-
-//         <form onSubmit={handleSubmit}>
-//           {/* FORM FIELDS (unchanged structure) */}
-//           {/* Your JSX fields remain exactly the same */}
-//         </form>
-
-//         <p className="account">
-//           Don't have an account?
-//           <Link to="/login">
-//             <button className="btn btn-link">Login</button>
-//           </Link>
-//         </p>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Register;
