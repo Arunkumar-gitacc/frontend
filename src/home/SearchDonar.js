@@ -113,7 +113,7 @@ const SearchDonar = (props) => {
             if (!errors.country && !errors.state && !errors.district && !errors.cityOrVillage && !errors.pinCode && !errors.bloodGroup) {
                 try {
                     // Make a GET request to verify the data
-                    const response = await axios.get('http://16.112.123.127:8080/userdetails/getAllUsers');
+                    const response = await axios.get('http://18.61.161.202:8080/userdetails/getAllUsers');
                 
                     if (response.status === 200) {
                         const users = response.data;
