@@ -62,7 +62,7 @@ const Login = (props) => {
     if (email && password) {
       if (!errors.email && !errors.password) {
         try {
-          const response = await axios.post('${API_BASE_URL}/userdetails/login', { email, password });
+          const response = await axios.post(`${API_BASE_URL}/userdetails/login`, { email, password });
 
           if (response.status === 200) {
             localStorage.setItem('user', JSON.stringify(response.data));
