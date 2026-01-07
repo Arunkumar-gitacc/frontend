@@ -7,8 +7,9 @@ import countryList from 'react-select-country-list';
 import './Register.css'; // Import the CSS file
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const Register = ({ onSelectChange }) => {
+  
   const [emailCheckStatus, setEmailCheckStatus] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
