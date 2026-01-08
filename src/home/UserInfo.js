@@ -10,7 +10,7 @@ const UserInfo = () => {
             const email = sessionStorage.getItem('email'); // Retrieve email from sessionStorage
             if (token && email) {
                 try {
-                    const response = await axios.get(`http://${API_BASE_URL}:8080/userdetails/getByEmail/${email}`, {
+                    const response = await axios.get(`${API_BASE_URL}/userdetails/getByEmail/${email}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
