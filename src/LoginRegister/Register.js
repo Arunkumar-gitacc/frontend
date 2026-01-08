@@ -215,7 +215,7 @@ const Register = ({ onSelectChange }) => {
           try {
             const response = await axios.post(`${API_BASE_URL}/userdetails/save`, formData);
             if (response.status === 200) {
-              alert('Form Submitted Successfully');
+              alert('Form Submitted Successfully1');
             } else {
               alert('There was a problem submitting the form. Please try again.');
             }
