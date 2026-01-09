@@ -76,7 +76,7 @@ const Register = ({ onSelectChange }) => {
   };
   const checkEmailUniqueness = async (email) => {
     try {
-      const response = await axios.get(`http://16.112.121.224:8080/userdetails/check-email/${email}`);
+      const response = await axios.get(`${API_BASE_URL}/userdetails/check-email/${email}`);
       if (response.data) {
         alert('Email is already registered');
         setEmailCheckStatus('Email is already registered');
