@@ -106,3 +106,114 @@
 #                 "frontend_tag": "'"${IMAGE_TAG}"'"
 #               }
 #             }'
+name: Frontend CI - Build & Trigger Deploy (with SonarQube)
+
+on:
+  push:
+    branches:
+      - demo
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------
+      # 1️⃣ CHECKOUT CODE
+      # -----------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------
+      # 2️⃣ SETUP NODE (matches legacy projects)
+      # -----------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # -----------------------
+      # 3️⃣ INSTALL DEPENDENCIES (NO CODE CHANGE)
+      # -----------------------
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # -----------------------
+      # 4️⃣ RUN TESTS (OPTIONAL, SAFE)
+      # -----------------------
+      - name: Run tests
+        run: npm test -- --coverage
+        continue-on-error: true
+
+      # -----------------------
+      # 5️⃣ SONARQUBE SCAN
+      # -----------------------
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # -----------------------
+      # 6️⃣ SONARQUBE QUALITY GATE (BLOCK PIPELINE)
+      # -----------------------
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # -----------------------
+      # 7️⃣ LOGIN TO DOCKER HUB
+      # -----------------------
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # -----------------------
+      # 8️⃣ SET IMAGE TAG (SHORT SHA)
+      # -----------------------
+      - name: Set image tag
+        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      # -----------------------
+      # 9️⃣ BUILD FRONTEND IMAGE
+      # -----------------------
+      - name: Build frontend image
+        run: |
+          docker build \
+            -t arunkumar885825/frontend:${IMAGE_TAG} \
+            -t arunkumar885825/frontend:latest \
+            .
+
+      # -----------------------
+      # 🔟 PUSH FRONTEND IMAGE
+      # -----------------------
+      - name: Push frontend image
+        run: |
+          docker push arunkumar885825/frontend:${IMAGE_TAG}
+          docker push arunkumar885825/frontend:latest
+
+      # -----------------------
+      # 1️⃣1️⃣ TRIGGER DEPLOYMENT REPO
+      # -----------------------
+      - name: Trigger deployment pipeline
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.DEPLOYMENT_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/arunkumar-gitacc/deployment/dispatches \
+            -d '{
+              "event_type": "frontend_updated",
+              "client_payload": {
+                "frontend_tag": "'"${IMAGE_TAG}"'"
+              }
+            }'
