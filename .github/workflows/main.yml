@@ -220,6 +220,9 @@
 
 name: Build & Push Image (Auto Versioned)
 
+permissions:
+  contents: write  
+
 on:
   push:
     branches:
