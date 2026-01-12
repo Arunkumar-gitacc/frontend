@@ -50,12 +50,68 @@
 #                 "tag": "'"${{ github.sha }}"'"
 #               }
 #             }'
+# name: Frontend CI - Build & Trigger Deploy
+
+# on:
+#   push:
+#     branches: ["main"]
+
+# permissions:
+#   contents: read
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1️⃣ Checkout code
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       # 2️⃣ Login to Docker Hub
+#       - name: Login to Docker Hub
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ secrets.DOCKER_USERNAME }}
+#           password: ${{ secrets.DOCKER_PASSWORD }}
+
+#       # 3️⃣ Set short Git SHA
+#       - name: Set image tag
+#         run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+#       # 4️⃣ Build frontend image
+#       - name: Build frontend image
+#         run: |
+#           docker build \
+#             -t arunkumar885825/frontend:${IMAGE_TAG} \
+#             -t arunkumar885825/frontend:latest \
+#             .
+
+#       # 5️⃣ Push frontend image
+#       - name: Push frontend image
+#         run: |
+#           docker push arunkumar885825/frontend:${IMAGE_TAG}
+#           docker push arunkumar885825/frontend:latest
+
+#       # 6️⃣ Trigger deployment repo
+#       - name: Trigger deployment pipeline
+#         run: |
+#           curl -X POST \
+#             -H "Authorization: token ${{ secrets.DEPLOYMENT_REPO_TOKEN }}" \
+#             -H "Accept: application/vnd.github.v3+json" \
+#             https://api.github.com/repos/arunkumar-gitacc/deployment/dispatches \
+#             -d '{
+#               "event_type": "frontend_updated",
+#               "client_payload": {
+#                 "frontend_tag": "'"${IMAGE_TAG}"'"
+#               }
+#             }'
 # name: Frontend CI - Build & Trigger Deploy (with SonarQube)
 
 # on:
 #   push:
 #     branches:
-#       - main
+#       - demo
 
 # permissions:
 #   contents: read
@@ -162,92 +218,10 @@
 #               }
 #             }'
 
-# name: Frontend CI + CD (uat / test / demo)
+name: Build & Push Image (Auto Versioned)
 
-# on:
-#   push:
-#     branches:
-#       - uat
-#       - test
-#       - demo
-#     paths:
-#       - "frontend/**"
-
-# permissions:
-#   contents: read
-
-# jobs:
-#   frontend-ci-cd:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       # -----------------------
-#       # CHECKOUT CODE
-#       # -----------------------
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-
-#       # -----------------------
-#       # SET BRANCH NAME
-#       # -----------------------
-#       - name: Set branch name
-#         run: |
-#           echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-#       # -----------------------
-#       # LOGIN TO DOCKER HUB
-#       # -----------------------
-#       - name: Login to Docker Hub
-#         uses: docker/login-action@v3
-#         with:
-#           username: ${{ secrets.DOCKER_USERNAME }}
-#           password: ${{ secrets.DOCKER_PASSWORD }}
-
-#       # -----------------------
-#       # BUILD FRONTEND IMAGE
-#       # -----------------------
-#       - name: Build frontend image
-#         run: |
-#           docker build \
-#             -t arunkumar885825/frontend:${BRANCH_NAME} \
-#             ./frontend
-
-#       # -----------------------
-#       # PUSH FRONTEND IMAGE
-#       # -----------------------
-#       - name: Push frontend image
-#         run: |
-#           docker push arunkumar885825/frontend:${BRANCH_NAME}
-
-#       # -----------------------
-#       # CD - DEPLOY TO EC2
-#       # -----------------------
-#       - name: Deploy frontend (branch specific)
-#         uses: appleboy/ssh-action@v1.0.3
-#         with:
-#           host: ${{ secrets.EC2_HOST }}
-#           username: ${{ secrets.EC2_USER }}
-#           key: ${{ secrets.EC2_SSH_KEY }}
-#           script: |
-#             set -e
-#             echo "🚀 Deploying FRONTEND for branch: ${BRANCH_NAME}"
-
-#             cd /home/ec2-user/${BRANCH_NAME}
-#             export BRANCH_NAME=${BRANCH_NAME}
-
-#             docker compose pull frontend
-#             docker compose up -d frontend
-
-
-
-
-
-
-
-
-name: Frontend Build & Push
+permissions:
+  contents: write  
 
 on:
   push:
@@ -258,46 +232,69 @@ on:
       - prod
 
 jobs:
-  build-frontend:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout
+      # 1️⃣ Checkout with full history (needed for tags)
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # 2️⃣ Extract branch name
+      # 2️⃣ Determine branch name
       - name: Set branch name
         run: |
-          echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          BRANCH=${GITHUB_REF##*/}
+          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
-      # 3️⃣ Set image tag (branch + short sha)
-      - name: Set image tag
+      # 3️⃣ Get latest semantic version for this branch
+      - name: Get latest version
         run: |
-          echo "IMAGE_TAG=${BRANCH_NAME}-${GITHUB_SHA::7}" >> $GITHUB_ENV
+          git fetch --tags
 
-      # 4️⃣ Login to Docker Hub
-      - name: Docker Login
+          LAST_TAG=$(git tag -l "${BRANCH}-v*" | sort -V | tail -n 1)
+
+          if [ -z "$LAST_TAG" ]; then
+            VERSION="v1.0.0"
+          else
+            BASE_VERSION=${LAST_TAG#*-v}
+            IFS='.' read MAJOR MINOR PATCH <<< "$BASE_VERSION"
+            PATCH=$((PATCH + 1))
+            VERSION="v$MAJOR.$MINOR.$PATCH"
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${BRANCH}-$VERSION" >> $GITHUB_ENV
+
+      # 4️⃣ Create git tag (for tracking)
+      - name: Create version tag
+        run: |
+          git tag "${IMAGE_TAG}"
+          git push origin "${IMAGE_TAG}"
+
+      # 5️⃣ Login to Docker Hub
+      - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
             -u "${{ secrets.DOCKER_USERNAME }}" \
             --password-stdin
 
-      # 5️⃣ Build frontend image
-      - name: Build Frontend Image
+      # 6️⃣ Build Docker image
+      - name: Build Docker image
         run: |
           docker build \
             -t ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }} \
             .
 
-      # 6️⃣ Push frontend image
-      - name: Push Frontend Image
+      # 7️⃣ Push Docker image
+      - name: Push Docker image
         run: |
           docker push \
             ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}
 
-      # 7️⃣ Log success
-      - name: Success message
+      # 8️⃣ Success output
+      - name: Success
         run: |
-          echo "✅ Frontend image pushed:"
+          echo "✅ Image built & pushed:"
           echo "${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
