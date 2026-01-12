@@ -218,6 +218,7 @@
 #               }
 #             }'
 
+
 name: Build & Push Image (Auto Versioned)
 
 permissions:
