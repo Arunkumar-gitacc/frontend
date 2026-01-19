@@ -299,3 +299,18 @@ jobs:
         run: |
           echo "✅ Image built & pushed:"
           echo "${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
+      
+      - name: Trigger Deployment Repo
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_REPO_TOKEN }}" \
+            https://api.github.com/repos/<Arunkumar-gitacc>/<deployment>/dispatches \
+            -d '{
+              "event_type": "deploy",
+              "client_payload": {
+                "environment": "${{ github.ref_name }}",
+                "repo": "${{ github.repository }}",
+                "image_tag": "${{ env.IMAGE_TAG }}"
+              }
+            }'
