@@ -219,10 +219,10 @@
 #             }'
 
 
-name: Build & Push Image (Auto Versioned)
+name: Build & Push Frontend Image (Auto Versioned)
 
 permissions:
-  contents: write  
+  contents: write
 
 on:
   push:
@@ -237,30 +237,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout with full history (needed for tags)
+      # 1. Checkout with full history (needed for tags)
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ Determine branch name
+      # 2. Determine branch name
       - name: Set branch name
         run: |
           BRANCH=${GITHUB_REF##*/}
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
-      # 3️⃣ Get latest semantic version for this branch
+      # 3. Get latest semantic version for this branch
       - name: Get latest version
         run: |
           git fetch --tags
-
+          # Look for tags specifically for this branch: e.g., dev-v1.0.1
           LAST_TAG=$(git tag -l "${BRANCH}-v*" | sort -V | tail -n 1)
 
           if [ -z "$LAST_TAG" ]; then
             VERSION="v1.0.0"
           else
+            # Extract version after the branch name and '-v'
             BASE_VERSION=${LAST_TAG#*-v}
-            IFS='.' read MAJOR MINOR PATCH <<< "$BASE_VERSION"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
             PATCH=$((PATCH + 1))
             VERSION="v$MAJOR.$MINOR.$PATCH"
           fi
@@ -268,46 +269,38 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "IMAGE_TAG=${BRANCH}-$VERSION" >> $GITHUB_ENV
 
-      # 4️⃣ Create git tag (for tracking)
-      - name: Create version tag
+      # 4. Create git tag (Configuring user is essential here)
+      - name: Create and push git tag
         run: |
-          git tag "${IMAGE_TAG}"
-          git push origin "${IMAGE_TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ env.IMAGE_TAG }}"
+          git push origin "${{ env.IMAGE_TAG }}"
 
-      # 5️⃣ Login to Docker Hub
+      # 5. Login to Docker Hub
       - name: Docker login
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
-            -u "${{ secrets.DOCKER_USERNAME }}" \
-            --password-stdin
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 6️⃣ Build Docker image
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }} \
-            .
-
-      # 7️⃣ Push Docker image
-      - name: Push Docker image
-        run: |
-          docker push \
+      # 6. Build and Push Frontend Docker Image
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
             ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.BRANCH }}-latest
 
-      # 8️⃣ Success output
-      - name: Success
+      # 7. Success output
+      - name: Success Summary
         run: |
-          echo "✅ Image built & pushed:"
-          echo "${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
-      - name: Debug token exists
-        run: |
-          if [ -z "${{ secrets.DEPLOY_REPO_TOKEN }}" ]; then
-            echo "❌ DEPLOY_REPO_TOKEN is EMPTY or NOT SET in this repo"
-            exit 1
-          else
-            echo "✅ DEPLOY_REPO_TOKEN is available"
-          fi
+          echo "✅ Frontend Version Released: ${{ env.IMAGE_TAG }}"
+          echo "✅ Docker Image: ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
 
+      # 8. Trigger EC2 Deployment
       - name: Trigger EC2 Deployment
         run: |
           curl -X POST "https://api.github.com/repos/Arunkumar-gitacc/deployment/dispatches" \
@@ -315,4 +308,5 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.DEPLOY_REPO_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -d "{\"event_type\":\"deploy\",\"client_payload\":{\"env\":\"${{ github.ref_name }}\"}}"
+
 
