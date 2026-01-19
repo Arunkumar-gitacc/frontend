@@ -299,7 +299,15 @@ jobs:
         run: |
           echo "✅ Image built & pushed:"
           echo "${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
-      
+      - name: Debug token exists
+        run: |
+          if [ -z "${{ secrets.DEPLOY_REPO_TOKEN }}" ]; then
+            echo "❌ DEPLOY_REPO_TOKEN is EMPTY or NOT SET in this repo"
+            exit 1
+          else
+            echo "✅ DEPLOY_REPO_TOKEN is available"
+          fi
+
       - name: Trigger EC2 Deployment
         run: |
           curl -X POST "https://api.github.com/repos/Arunkumar-gitacc/deployment/dispatches" \
