@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const UserInfo = () => {
     const [userDetails, setUserDetails] = useState(null);
 
@@ -10,7 +10,7 @@ const UserInfo = () => {
             const email = sessionStorage.getItem('email'); // Retrieve email from sessionStorage
             if (token && email) {
                 try {
-                    const response = await axios.get(`http://18.61.161.202:8080/userdetails/getByEmail/${email}`, {
+                    const response = await axios.get(`${API_BASE_URL}/userdetails/getByEmail/${email}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
