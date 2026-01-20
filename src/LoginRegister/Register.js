@@ -45,7 +45,6 @@ const Register = ({ onSelectChange }) => {
   
   // Options for the select component
   const options = useMemo(() => countryList().getData(), []);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const handleChange = (e, phone) => {
     if (phone !== undefined) {
       // This handles the phone input from react-phone-input-2
