@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Select from 'react-select'; // Make sure you have react-select installed
 import countryList from 'react-select-country-list'; // Make sure you have react-select-country-list installed
 import { Container } from 'react-bootstrap';
-
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const SearchDonar = (props) => {
     const navigate = useNavigate();
@@ -113,7 +113,7 @@ const SearchDonar = (props) => {
             if (!errors.country && !errors.state && !errors.district && !errors.cityOrVillage && !errors.pinCode && !errors.bloodGroup) {
                 try {
                     // Make a GET request to verify the data
-                    const response = await axios.get('http://18.61.161.202:8080/userdetails/getAllUsers');
+                    const response = await axios.get(`${API_BASE_URL}/userdetails/getAllUsers`);
                 
                     if (response.status === 200) {
                         const users = response.data;
