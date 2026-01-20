@@ -58,7 +58,7 @@ const Login = (props) => {
     e.preventDefault();
     validateField('email', email);
     validateField('password', password);
-    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+    
     if (email && password) {
       if (!errors.email && !errors.password) {
         try {

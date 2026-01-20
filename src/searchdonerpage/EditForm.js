@@ -6,6 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import countryList from 'react-select-country-list';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 // import './EditForm.css';
 
 const EditForm = () => {
@@ -140,7 +141,7 @@ const EditForm = () => {
       alert('Please fix the errors in the form before submitting.');
       return;
     }
-    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+    
     try {
       const response = await axios.put(`${API_BASE_URL}/userdetails/update/${formData.email}`, formData);
       if (response.status === 200) {
