@@ -300,7 +300,7 @@
 #           echo "✅ Frontend Version Released: ${{ env.IMAGE_TAG }}"
 #           echo "✅ Docker Image: ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
 
-#       # 8. Trigger EC2 Deployment1
+#       # 8. Trigger EC2 Deployment12
 #       - name: Trigger EC2 Deployment
 #         run: |
 #           curl -X POST "https://api.github.com/repos/Arunkumar-gitacc/deployment/dispatches" \
