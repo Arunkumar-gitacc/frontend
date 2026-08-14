@@ -240,7 +240,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout with full history (needed for tags)
+      # 1️⃣ Checkout application code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -257,13 +257,11 @@ jobs:
         run: |
           git fetch --tags
 
-          # Find the highest existing tag matching pattern (e.g., test-v1.0.0)
           LAST_TAG=$(git tag -l "${BRANCH}-v*" | sort -V | tail -n 1)
 
           if [ -z "$LAST_TAG" ]; then
             VERSION="v1.0.0"
           else
-            # Extract version numbers after "-v"
             BASE_VERSION=${LAST_TAG#*-v}
             IFS='.' read MAJOR MINOR PATCH <<< "$BASE_VERSION"
             PATCH=$((PATCH + 1))
@@ -273,7 +271,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "IMAGE_TAG=${BRANCH}-$VERSION" >> $GITHUB_ENV
 
-      # 4️⃣ Create git tag (for tracking)
+      # 4️⃣ Create git tag in App Repo
       - name: Create version tag
         run: |
           git tag "${IMAGE_TAG}"
@@ -286,7 +284,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 6️⃣ Build and Push Frontend Docker Image (STRICTLY SEMANTIC TAG ONLY)
+      # 6️⃣ Build and Push Docker Image
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
@@ -294,29 +292,8 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}
 
-      # 7️⃣ Update image tag in frontend-deployment.yaml and commit to Git
-      - name: Update Deployment Manifest in Git
-        run: |
-          # Configure Git user for automated commit
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Replace the existing image tag with the new semantic IMAGE_TAG
-          sed -i 's|image: .*/frontend:.*|image: '${{ secrets.DOCKER_USERNAME }}'/frontend:'"${IMAGE_TAG}"'|g' frontend-deployment.yaml
-
-          # Commit and push the updated manifest back to the repository
-          git add frontend-deployment.yaml
-          git commit -m "ci: update frontend image tag to ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
-          git push origin ${BRANCH}
-
-      # 8️⃣ Success output
-      - name: Success Summary
-        run: |
-          echo "✅ Frontend Version Released: ${{ env.IMAGE_TAG }}"
-          echo "✅ Docker Image: ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}"
-
-      # 9️⃣ Trigger Deployment Pipeline
-      - name: Trigger Deployment Pipeline
+      # 7️⃣ Notify Deployment Repository (Send image_tag in payload)
+      - name: Trigger Deployment Repo
         run: |
           curl -X POST "https://api.github.com/repos/Arunkumar-gitacc/deployment/dispatches" \
             -H "Accept: application/vnd.github+json" \
