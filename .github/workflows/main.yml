@@ -138,16 +138,43 @@ jobs:
           BRANCH=${GITHUB_REF##*/}
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
-      # 3️⃣ Get latest semantic version for this branch
+      # # 3️⃣ Get latest semantic version for this branch
+      # - name: Get latest version
+      #   run: |
+      #     git fetch --tags
+
+      #     LAST_TAG=$(git tag -l "${BRANCH}-v*" | sort -V | tail -n 1)
+
+      #     if [ -z "$LAST_TAG" ]; then
+      #       VERSION="v1.0.0"
+      #     else
+      #       BASE_VERSION=${LAST_TAG#*-v}
+      #       IFS='.' read MAJOR MINOR PATCH <<< "$BASE_VERSION"
+      #       PATCH=$((PATCH + 1))
+      #       VERSION="v$MAJOR.$MINOR.$PATCH"
+      #     fi
+
+      #     echo "VERSION=$VERSION" >> $GITHUB_ENV
+      #     echo "IMAGE_TAG=${BRANCH}-$VERSION" >> $GITHUB_ENV
+
+      # # 4️⃣ Create git tag (for tracking)
+      # - name: Create version tag
+      #   run: |
+      #     git tag "${IMAGE_TAG}"
+      #     git push origin "${IMAGE_TAG}"
+
+      # 3️⃣ Get latest semantic version for this branch & increment patch version
       - name: Get latest version
         run: |
           git fetch --tags
 
+          # Find the highest existing tag matching pattern (e.g., test-v1.0.0)
           LAST_TAG=$(git tag -l "${BRANCH}-v*" | sort -V | tail -n 1)
 
           if [ -z "$LAST_TAG" ]; then
             VERSION="v1.0.0"
           else
+            # Extract version numbers after "-v"
             BASE_VERSION=${LAST_TAG#*-v}
             IFS='.' read MAJOR MINOR PATCH <<< "$BASE_VERSION"
             PATCH=$((PATCH + 1))
