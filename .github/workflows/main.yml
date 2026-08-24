@@ -314,8 +314,8 @@ on:
       - prod
 
 env:
-  DEPLOYMENT_REPO: Arunkumar-gitacc/deployment
-  MANIFEST_FILE: frontend/deployment.yaml
+  DEPLOYMENT_REPO: Arunkumar-gitacc/argocd_CD
+  MANIFEST_FILE: frontend/frontend-deployment.yaml
 
 jobs:
   build:
