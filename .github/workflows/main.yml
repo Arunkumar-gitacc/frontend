@@ -336,8 +336,8 @@ jobs:
       # 3️⃣ Install dependencies & run React unit tests
       - name: Run Unit Tests
         run: |
-          npm ci --legacy-peer-deps
-          npm test -- --watchAll=false --passWithNoTests
+          npm install --legacy-peer-deps
+          npm test -- --watchAll=false --passWithNoTests --forceExit
           
       - name: Set branch name
         run: |
