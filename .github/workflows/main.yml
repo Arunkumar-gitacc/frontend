@@ -265,6 +265,24 @@ jobs:
       # 1️⃣ Checkout
       - name: Checkout code
         uses: actions/checkout@v4
+# ---------------------------------------------------------
+      # 🆕 ADDED: UNIT TESTING STEPS
+      # ---------------------------------------------------------
+      # 2️⃣ Set up Node.js runtime
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3️⃣ Install dependencies & run React unit tests
+      - name: Run Unit Tests
+        run: |
+          npm ci
+          npm test -- --watchAll=false --passWithNoTests
+      # ---------------------------------------------------------
+
+
 
       # 2️⃣ Extract branch name
       - name: Set branch name
