@@ -336,8 +336,9 @@ jobs:
       # 3️⃣ Install dependencies & run React unit tests
       - name: Run Unit Tests
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm test -- --watchAll=false --passWithNoTests
+          
       - name: Set branch name
         run: |
           BRANCH=${GITHUB_REF##*/}
