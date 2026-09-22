@@ -1,8 +1,24 @@
+// import { render, screen } from '@testing-library/react';
+// import App from './App';
+
+// test('renders learn react link', () => {
+//   render(<App />);
+//   const linkElement = screen.getByText(/learn react/i);
+//   expect(linkElement).toBeInTheDocument();
+// });
+
+
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders Home navigation link', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const homeLink = screen.getByText(/Home/i);
+  expect(homeLink).toBeInTheDocument();
+});
+
+test('renders About Us section heading', () => {
+  render(<App />);
+  const aboutHeading = screen.getByText(/ABOUT US/i);
+  expect(aboutHeading).toBeInTheDocument();
 });
