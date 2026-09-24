@@ -346,6 +346,48 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_SCANNER_OPTS: "-Dsonar.scanner.httpRequestHeaders=ngrok-skip-browser-warning:true"
           
+      # - name: Set branch name
+      #   run: |
+      #     BRANCH=${GITHUB_REF##*/}
+      #     echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+
+      # - name: Get latest version
+      #   run: |
+      #     git fetch --tags
+      #     LAST_TAG=$(git tag -l "${BRANCH}-v*" | sort -V | tail -n 1)
+
+      #     if [ -z "$LAST_TAG" ]; then
+      #       VERSION="v1.0.0"
+      #     else
+      #       BASE_VERSION=${LAST_TAG#*-v}
+      #       IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+      #       PATCH=$((PATCH + 1))
+      #       VERSION="v$MAJOR.$MINOR.$PATCH"
+      #     fi
+
+      #     echo "VERSION=$VERSION" >> $GITHUB_ENV
+      #     echo "IMAGE_TAG=${BRANCH}-$VERSION" >> $GITHUB_ENV
+
+      # - name: Create version tag
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git tag "${IMAGE_TAG}"
+      #     git push origin "${IMAGE_TAG}"
+
+      # - name: Login to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # - name: Build and Push Docker Image
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}
+
       - name: Set branch name
         run: |
           BRANCH=${GITHUB_REF##*/}
@@ -381,7 +423,27 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker Image
+      # Step 1: Build Docker image locally (load: true puts it into runner's local Docker daemon)
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}
+
+      # Step 2: Scan the locally built image with Trivy
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKER_USERNAME }}/frontend:${{ env.IMAGE_TAG }}'
+          format: 'table'
+          exit-code: '1' # Fails the pipeline if High or Critical vulnerabilities exist
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # Step 3: Push Docker image (only executes if Trivy scan passes)
+      - name: Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
